@@ -28,37 +28,56 @@ counter = 0
 stage = None
 pourcentage = 0
 
+# Message de réussite ou d'erreur
+message = {
+    'type': None,
+    'texte': ''
+}
+
 ## Setup mediapipe instance
 with mp_pose.Pose(min_detection_confidence=0.5, min_tracking_confidence=0.5) as pose:
     while cap.isOpened():
         ret, frame = cap.read()
         
-        # Recolor image to RGB
         image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-        # image = cv2.rotate(image, cv2.ROTATE_90_CLOCKWISE)
         image.flags.writeable = False
       
-        # Make detection
+        # Detection des points par l'IA
         results = pose.process(image)
     
         # Recolor back to BGR
         image.flags.writeable = True
         image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
-        
-        # Extract landmarks
-        try:
-            landmarks = results.pose_landmarks.landmark
-            
-            # Get coordinates
-            shoulder = [landmarks[mp_pose.PoseLandmark.LEFT_SHOULDER.value].x,landmarks[mp_pose.PoseLandmark.LEFT_SHOULDER.value].y]
-            elbow = [landmarks[mp_pose.PoseLandmark.LEFT_ELBOW.value].x,landmarks[mp_pose.PoseLandmark.LEFT_ELBOW.value].y]
-            wrist = [landmarks[mp_pose.PoseLandmark.LEFT_WRIST.value].x,landmarks[mp_pose.PoseLandmark.LEFT_WRIST.value].y]
-                
-            # Calculate angle
-            angle = calcul_angle(shoulder, elbow, wrist)
 
-            # Visualize angle
-            cv2.putText(image, str(round(angle)), tuple(np.multiply(elbow, [image.shape[1], image.shape[0]]).astype(int)), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2, cv2.LINE_AA)
+        message['type'] = None
+        
+        try:
+            # On extrait le squelette
+            squelette = results.pose_landmarks.landmark
+            
+            # Récupère les coordonnées
+            epaule = [squelette[mp_pose.PoseLandmark.LEFT_SHOULDER.value].x, squelette[mp_pose.PoseLandmark.LEFT_SHOULDER.value].y]
+            coude = [squelette[mp_pose.PoseLandmark.LEFT_ELBOW.value].x, squelette[mp_pose.PoseLandmark.LEFT_ELBOW.value].y]
+            poignet = [squelette[mp_pose.PoseLandmark.LEFT_WRIST.value].x, squelette[mp_pose.PoseLandmark.LEFT_WRIST.value].y]
+
+            # Jambe gauche
+            if squelette[mp_pose.PoseLandmark.LEFT_KNEE.value].visibility >= 0.7:
+                genou = [squelette[mp_pose.PoseLandmark.LEFT_KNEE.value].x, squelette[mp_pose.PoseLandmark.LEFT_KNEE.value].y]
+                pass
+            # Jambe droite
+            elif squelette[mp_pose.PoseLandmark.RIGHT_KNEE.value].visibility >= 0.7:
+                pass
+            else:
+                message = {
+                    'type': 'erreur',
+                    'texte': 'PLACEZ VOUS DEVANT LA CAMERA'
+                }
+
+            # Calcul de l'ange
+            angle = calcul_angle(epaule, coude, poignet)
+
+            # Visualisation de l'angle
+            cv2.putText(image, str(round(angle)), tuple(np.multiply(coude, [image.shape[1], image.shape[0]]).astype(int)), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2, cv2.LINE_AA)
             
             # Curl counter logic
             if angle > 160:
@@ -96,7 +115,11 @@ with mp_pose.Pose(min_detection_confidence=0.5, min_tracking_confidence=0.5) as 
         # Pourcentage
         utilitaires.dessiner_bar_de_pourcentage(image, pourcentage)
 
-        # Render detections
+        # Message de succès ou d'erreur
+        utilitaires.dessiner_message(image, message)
+
+
+        # Rendu du squelette
         mp_drawing.draw_landmarks(image, results.pose_landmarks, mp_pose.POSE_CONNECTIONS,
                                 mp_drawing.DrawingSpec(color=(245,117,66), thickness=2, circle_radius=2), 
                                 mp_drawing.DrawingSpec(color=(245,66,230), thickness=2, circle_radius=2) 
