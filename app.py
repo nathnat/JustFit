@@ -1,10 +1,69 @@
-from tkinter import Tk, Button, Label, Frame, Toplevel, PhotoImage, Canvas
 from PIL import ImageTk, Image
+from tkinter.ttk import Entry, Combobox
 from tkscrolledframe import ScrolledFrame
-import platform
-import exercices
+from tkinter import Tk, Button, Label, Frame, Toplevel, PhotoImage, Canvas, StringVar
+
 import ia
 import utils
+import exercices
+
+class ListeEntrées(Frame):
+    def __init__(self, parent, titre_entrée):
+        Frame.__init__(self, parent)
+
+        self.nombre = 0
+        self.entrées = []
+        self.titre_entrée = titre_entrée
+
+        Label(self, text='Choix de l\'exercice', font=('Arial', 18)).grid(row=0, column=0)
+        Label(self, text='Quantité', font=('Arial', 18)).grid(row=0, column=1)
+
+    def ajouter(self):
+        self.nombre += 1
+        self.entrées.append(Entrée(self, self.nombre))
+    
+    def extraire(self):
+        new = Séance(self.titre_entrée.get(), [(entrée.exercice, entrée.valeur_quantité) for entrée in self.entrées])
+        new.lancer_seance()            
+
+class Entrée():
+    def __init__(self, parent, index):
+        liste_menu = exercices.TOUS
+
+        self.index = index
+        self.exercice = liste_menu[0]
+
+        self.menu = Combobox(parent, values=liste_menu)
+        self.menu.current(0)
+        self.menu.bind('<<ComboboxSelected>>', self.on_select)
+        self.menu.grid(row=self.index, column=0)
+        
+        self.label_quantité = Label(parent, text='secondes')
+        self.label_quantité.grid(row=self.index, column=2)
+
+        # On filtre pour que la valeur de la quantité reste un int
+        self.valeur_quantité = 0
+        def filtrer(*args):
+            try:
+                if quantité.get().strip() == '':
+                    self.valeur_quantité = 0
+                    quantité.set(self.valeur_quantité)
+                else:
+                    self.valeur_quantité = int(quantité.get())
+            except:
+                quantité.set(self.valeur_quantité)
+
+        quantité = StringVar(parent, 0)
+        quantité.trace_add('write', filtrer)
+        entrée_quantité = Entry(parent, textvariable=quantité, width=5)
+        entrée_quantité.grid(row=self.index, column=1)
+    
+    def on_select(self, event):
+        self.exercice = self.menu.get()
+        if self.exercice == exercices.PAUSE:
+            self.label_quantité.configure(text='secondes')
+        else:
+            self.label_quantité.configure(text='répétitions')
 
 class ResizingCanvas(Canvas):
     def __init__(self, parent, **kwargs):
@@ -42,7 +101,7 @@ def open_popup(titre):
     button.pack(side='bottom')
     utils.center(top)
 
-class Séance():
+class Séance:
     def __init__(self, titre: str, exercices: list):
         self.titre = titre
         self.exercices = exercices
@@ -124,7 +183,7 @@ class App:
     def page_de_lancement(self):
         page = Frame(self.root)
 
-        canvas = ResizingCanvas(page, bg='#0097b2', width=self.width, height=self.height, bd=0, highlightthickness=0, relief='ridge')
+        canvas = ResizingCanvas(page, bg=self.background_color, width=self.width, height=self.height, bd=0, highlightthickness=0, relief='ridge')
         canvas.pack(expand='yes', fill='both')
 
         # On récupère les coordonées du centre de l'écran    
@@ -190,11 +249,14 @@ class App:
         page.pack(expand='yes')
     
     def selection_seances(self):
-        page = Frame().pack()
+        page = Frame(bg=self.background_color)
+        page.pack(expand='yes', fill='both')
 
         # On place le titre dans une frame
         titre = Label(page, text='Sélectionnez votre entraînement', pady=20, font=('Helvetica', 25))
         titre.pack(side='top')
+
+        Button(page, text='Créer une séance', command=lambda *args: self.transition_création_séance(page)).pack(side='top')
 
         test = [
             Séance('Jambe jeanne 🦵🔥', [
@@ -236,13 +298,40 @@ class App:
         # Create a frame within the ScrolledFrame
         liste_séance = sf.display_widget(Frame)
         créer_liste_séances(liste_séance, test)
-        # liste_séance['padx'] = root.winfo_screenwidth() / 100
 
     def transition_selection(self, page):
         page.destroy()
         self.root.title('JustFit - Sélection des séances')
         self.selection_seances()
     
+    def creation_séance(self):
+        page = Frame(self.root, bg=self.background_color, pady=80, padx=30)
+        page.pack(expand='yes', fill='both')
+
+        titre_entrée = Entry(page, font=('Arial',20), justify='center')
+        titre_entrée.insert(0, 'Ma nouvelle séance')
+        titre_entrée.pack(side='top')
+
+        liste = ListeEntrées(page, titre_entrée)
+        
+        Button(page, text='Ajouter un exercice', command=liste.ajouter).pack()
+
+        liste.ajouter()
+        liste.pack()
+        
+        def sauvegarder(c):
+            liste.extraire()
+
+        ajouter_au_menu = Label(page, text='Ajouter au menu', cursor='hand2', font=('Arial', 25), fg='#fff', bg='#006c80', padx=10, pady=10)
+        ajouter_au_menu.bind('<Button-1>', sauvegarder)
+        ajouter_au_menu.pack(side='bottom')
+
+        page.pack(expand='yes')
+    
+    def transition_création_séance(self, page):
+        page.destroy()
+        self.root.title('JustFit - Création d\'une séance')
+        self.creation_séance()
 
         
 root = Tk()
