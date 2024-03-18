@@ -1,4 +1,4 @@
-from PIL import ImageTk, Image
+import json
 from tkinter.ttk import Entry, Combobox
 from tkscrolledframe import ScrolledFrame
 from tkinter import Tk, Button, Label, Frame, Toplevel, PhotoImage, Canvas, StringVar
@@ -9,37 +9,50 @@ import exercices
 
 class ListeEntrées(Frame):
     def __init__(self, parent, titre_entrée):
-        Frame.__init__(self, parent)
-
+        Frame.__init__(self, parent, padx=10, pady=10, bg=parent['bg'])
+        
         self.nombre = 0
         self.entrées = []
         self.titre_entrée = titre_entrée
 
-        Label(self, text='Choix de l\'exercice', font=('Arial', 18)).grid(row=0, column=0)
-        Label(self, text='Quantité', font=('Arial', 18)).grid(row=0, column=1)
+        Label(self, text='Choix de l\'exercice', font=('Arial', 16), bg=parent['bg']).grid(row=0, column=0, padx=(0, 80))
+        Label(self, text='Quantité', font=('Arial', 16), bg=parent['bg']).grid(row=0, column=1)
+
+        self.pack()
+
+        sf = ScrolledFrame(parent, scrollbars='vertical', borderwidth=0, highlightthickness=0, width=535, height=470)
+        sf.pack()
+
+        # Scroll avec la roue de la souris et des flèches
+        sf.bind_scroll_wheel(root)
+        self.conteneur = sf.display_widget(Frame, fit_width=True)
+
+        Button(parent, text='Ajouter un exercice', command=self.ajouter).pack()
+        self.ajouter()
 
     def ajouter(self):
         self.nombre += 1
-        self.entrées.append(Entrée(self, self.nombre))
-    
+        self.entrées.append(Entrée(self.conteneur, self.nombre))
+
     def extraire(self):
-        new = Séance(self.titre_entrée.get(), [(entrée.exercice, entrée.valeur_quantité) for entrée in self.entrées])
-        new.lancer_seance()            
+        return Séance(self.titre_entrée.get(), [(entrée.exercice, entrée.valeur_quantité) for entrée in self.entrées]) 
 
 class Entrée():
     def __init__(self, parent, index):
         liste_menu = exercices.TOUS
-
+        
         self.index = index
         self.exercice = liste_menu[0]
 
-        self.menu = Combobox(parent, values=liste_menu)
+        font = 'Arial 15 roman normal'
+
+        self.menu = Combobox(parent, font=font, state='readonly', values=liste_menu, width=28)
         self.menu.current(0)
         self.menu.bind('<<ComboboxSelected>>', self.on_select)
-        self.menu.grid(row=self.index, column=0)
-        
-        self.label_quantité = Label(parent, text='secondes')
-        self.label_quantité.grid(row=self.index, column=2)
+        self.menu.grid(row=self.index, column=0, pady=3, padx=5)
+
+        self.label_quantité = Label(parent, font=font, text='secondes')
+        self.label_quantité.grid(row=self.index, column=2, padx=5)
 
         # On filtre pour que la valeur de la quantité reste un int
         self.valeur_quantité = 0
@@ -55,7 +68,7 @@ class Entrée():
 
         quantité = StringVar(parent, 0)
         quantité.trace_add('write', filtrer)
-        entrée_quantité = Entry(parent, textvariable=quantité, width=5)
+        entrée_quantité = Entry(parent, font=font, textvariable=quantité, width=8, justify='left')
         entrée_quantité.grid(row=self.index, column=1)
     
     def on_select(self, event):
@@ -106,7 +119,7 @@ class Séance:
         self.titre = titre
         self.exercices = exercices
 
-    def lancer_seance(self):
+    def lancer_seance(self, _):
         ia.lancer(self)
         open_popup(self.titre)
 
@@ -121,11 +134,12 @@ def créer_liste_séances(object, séances):
     object.grid_columnconfigure(1, weight=1)
     object.grid_columnconfigure(2, weight=1)
 
+    i = 0
     for index_ligne in range(nombre_ligne + 1):
         for index_colonne in range(3):
-            if len(séances) == 0:
+            if i >= len(séances):
                 break
-            séance = séances.pop()
+            séance = séances[i]
 
             # On construit l'affichage de l'entrainement
             cadre = Frame(object, pady=20, padx=20, borderwidth=1, relief='solid')
@@ -134,32 +148,35 @@ def créer_liste_séances(object, séances):
             cadre.grid(column=index_colonne, row=index_ligne, sticky='nswe', padx=10, pady=10)
             cadre.grid_propagate(False)
             
-            titre = Label(cadre, text=séance.titre, font=('Arial', 30, 'bold'))
+            titre = Label(cadre, text=séance.titre, font=('Arial', 30, 'bold'), pady=8)
             titre.pack()
 
-            for exercice in séance.exercices:
+            for i in range(len(séance.exercices)):
+                exercice = séance.exercices[i]
                 contenu = Label(cadre,
                     text=f'• {exercice[0]} {exercice[1]}',
-                    font=('Arial', 23),
+                    font=('Arial', 20),
                     anchor='w',
                     justify='left',
                     wraplength=root.winfo_screenwidth() / 3 - 65
                     )
-                
+
                 if exercice[0] == exercices.PAUSE:
                     contenu['text'] += ' s'
                 else:
                     contenu['text'] += ' rep'
                 
-                contenu.pack(fill='x')
+                # On place une petite marge entre le dernier exercices et le bouton
+                if i == len(séance.exercices) - 1:
+                    contenu.pack(fill='x', pady=(0,20))
+                else:
+                    contenu.pack(fill='x')
             
-            Button(cadre,
-                text='Lancer cette séance',
-                font=('Arial', 25),
-                pady=10,
-                command=séance.lancer_seance
-                ).pack(side='bottom')
+            lancer_bouton = Label(cadre, text='Lancer cette séance', cursor='hand2', font=('Arial', 19), fg='#fff', bg='#006c80', padx=10, pady=10)
+            lancer_bouton.bind('<Button-1>', séance.lancer_seance)
+            lancer_bouton.pack(side='bottom')
 
+            i += 1
 class App:
     def __init__(self, root):
         self.root = root
@@ -168,17 +185,22 @@ class App:
         # On lance l'app en plein écran fenetré
         self.width = self.root.winfo_screenwidth()
         self.height = self.root.winfo_screenheight()
-        self.root.geometry(f'{self.width}x{self.height}')
+        self.root.geometry(f'{self.width}x{self.height - 30}')
 
         # On centre la fenêtre sur l'écran
         utils.center(self.root)
         
         # Couleur de fond de l'app
-        self.background_color = '#0097B2'
+        self.background_color = '#52D1DC'
+        self.second_color = '#5F4BB6'
         self.root.configure(background=self.background_color)
 
         # Police de l'application
         self.font = ('Roboto', 18)
+
+        # On ouvre les séances enregistrés précédemment par l'utilisateur
+        self.save_file = 'séances.json'
+        self.séances = self.ouvrir_sauvegarde()
 
     def page_de_lancement(self):
         page = Frame(self.root)
@@ -197,7 +219,7 @@ class App:
 
         # Utilisez create_window pour placer le bouton dans le canvas
         
-        button = Label(page, text='Cliquez pour commencer', cursor='hand2', font=('Arial', 25), fg='#fff', bg='#006c80', padx=10, pady=10)
+        button = Label(page, text='Cliquez pour commencer', cursor='hand2', font=('Arial', 25), fg='#fff', bg=self.second_color, padx=20, pady=10)
         button.bind('<Button-1>', lambda x: self.transition_selection(page))
 
         buttonStart_window = canvas.create_window(center_x, center_y + 350, anchor='center', window=button)
@@ -228,7 +250,6 @@ class App:
             canvas.tag_raise(gif_label2)
             page.after(180, update2, ind)
 
-
         # GIF du cercle qui tourne autour du logo
         frame_count3 = 20
         cercle_frames = [PhotoImage(file='ressources/cercle.gif', format='gif -index %i' % i, master=page) for i in range(frame_count3)]
@@ -253,51 +274,27 @@ class App:
         page.pack(expand='yes', fill='both')
 
         # On place le titre dans une frame
-        titre = Label(page, text='Sélectionnez votre entraînement', pady=20, font=('Helvetica', 25))
-        titre.pack(side='top')
+        header_conteneur = Frame(page, bg=self.background_color)
+        titre = Label(header_conteneur, text='Sélectionnez votre entraînement ou ', pady=20, padx=10, font=('Arial', 25), bg=self.background_color)
+        titre.pack(side='left')
 
-        Button(page, text='Créer une séance', command=lambda *args: self.transition_création_séance(page)).pack(side='top')
+        bouton_créer = Label(header_conteneur, text='Créer une séance', cursor='hand2', font=('Arial', 20), fg='#fff', bg=self.second_color, padx=10, pady=10)
+        bouton_créer.bind('<Button-1>', lambda x: self.transition_création_séance(page))
+        bouton_créer.pack(side='right')
 
-        test = [
-            Séance('Jambe jeanne 🦵🔥', [
-                (exercices.HALTERE_GAUCHE, 5),
-                (exercices.PAUSE, 10),
-                (exercices.HALTERE_DROIT, 5),
-                (exercices.PAUSE, 10),
-                (exercices.HALTERE_DROIT, 5),
-            ]),
-            Séance('Squat', [
-                (exercices.SQUAT, 10),
-                (exercices.PAUSE, 20),
-                (exercices.HALTERE_GAUCHE, 10)
-            ]),
-            Séance('On sait pas trop', [
-                (exercices.SQUAT, 10),
-                (exercices.PAUSE, 20),
-                (exercices.HALTERE_GAUCHE, 10)
-            ]),
-            Séance('FENTE', [
-                (exercices.FENTE_GAUCHE, 3),
-                (exercices.PAUSE, 10),
-                (exercices.FENTE_DROIT, 3),
-                (exercices.HALTERE_GAUCHE, 10)
-            ]),
-            Séance('PAUSE', [
-                (exercices.PAUSE, 5)
-            ])
-        ]
+        header_conteneur.pack(side='top')
 
         # On crée la Frame scrollable
-        sf = ScrolledFrame(page, scrollbars='vertical')
+        sf = ScrolledFrame(page, scrollbars='vertical', bg=self.background_color)
         sf.pack(side='bottom', expand='yes', fill='both')
 
         # Scroll avec la roue de la souris et des flèches
-        sf.bind_arrow_keys(root)
         sf.bind_scroll_wheel(root)
 
         # Create a frame within the ScrolledFrame
-        liste_séance = sf.display_widget(Frame)
-        créer_liste_séances(liste_séance, test)
+        liste_séance = sf.display_widget(Frame, fit_width=True)
+        liste_séance['bg'] = self.background_color
+        créer_liste_séances(liste_séance, self.séances)
 
     def transition_selection(self, page):
         page.destroy()
@@ -305,35 +302,53 @@ class App:
         self.selection_seances()
     
     def creation_séance(self):
-        page = Frame(self.root, bg=self.background_color, pady=80, padx=30)
+        page = Frame(self.root, bg=self.background_color, pady=20, padx=30)
         page.pack(expand='yes', fill='both')
 
+        # Le titre modifiable de la séance
         titre_entrée = Entry(page, font=('Arial',20), justify='center')
         titre_entrée.insert(0, 'Ma nouvelle séance')
         titre_entrée.pack(side='top')
 
         liste = ListeEntrées(page, titre_entrée)
-        
-        Button(page, text='Ajouter un exercice', command=liste.ajouter).pack()
+        def ajouter(_):
+            self.séances.append(liste.extraire())
+            self.sauvegarder_séances()
+            self.transition_selection(page)
 
-        liste.ajouter()
-        liste.pack()
-        
-        def sauvegarder(c):
-            liste.extraire()
-
-        ajouter_au_menu = Label(page, text='Ajouter au menu', cursor='hand2', font=('Arial', 25), fg='#fff', bg='#006c80', padx=10, pady=10)
-        ajouter_au_menu.bind('<Button-1>', sauvegarder)
+        ajouter_au_menu = Label(page, text='Ajouter au menu', cursor='hand2', font=('Arial', 25), fg='#fff', bg=self.second_color, padx=10, pady=10)
+        ajouter_au_menu.bind('<Button-1>', ajouter)
         ajouter_au_menu.pack(side='bottom')
 
         page.pack(expand='yes')
-    
+
     def transition_création_séance(self, page):
         page.destroy()
         self.root.title('JustFit - Création d\'une séance')
         self.creation_séance()
 
+    def sauvegarder_séances(self):
+        '''Sauvegarde les séances de l'utilisateur dans un fichier JSON'''
+        output = []
+
+        for séance in self.séances:
+            output.append({
+                'titre': séance.titre,
+                'exercices': séance.exercices
+            })
+        with open(self.save_file, 'w') as file:
+            json.dump(output, file, indent=4)
         
+    def ouvrir_sauvegarde(self) -> [Séance]:
+        '''Renvoie la liste des séances depuis le fichier de sauvegarde JSON'''
+        file = open(self.save_file)
+        data = json.load(file)
+        
+        output = []
+        for séance in data:
+            output.append(Séance(séance['titre'], séance['exercices']))
+        return output
+
 root = Tk()
 app = App(root)
 app.page_de_lancement()

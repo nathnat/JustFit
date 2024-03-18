@@ -1,6 +1,5 @@
 import cv2
 import mediapipe as mp
-import numpy as np
 import utils
 import exercices
 import time
@@ -87,26 +86,14 @@ def lancer(séance):
                         hanche = [squelette[mp_pose.PoseLandmark.LEFT_HIP.value].x, squelette[mp_pose.PoseLandmark.LEFT_HIP.value].y]
                         genou = [squelette[mp_pose.PoseLandmark.LEFT_KNEE.value].x, squelette[mp_pose.PoseLandmark.LEFT_KNEE.value].y]
                         cheville = [squelette[mp_pose.PoseLandmark.LEFT_ANKLE.value].x, squelette[mp_pose.PoseLandmark.LEFT_ANKLE.value].y]
-                        # bout_pied_x = squelette[mp_pose.PoseLandmark.LEFT_FOOT_INDEX.value].x
-                        # if genou[0] < bout_pied_x:
-                        #     message = {
-                        #         'type': 'erreur',
-                        #         'texte': 'Gardez vos jambes droites'
-                        #     }
+
                     # Jambe droite
                     elif squelette[mp_pose.PoseLandmark.RIGHT_KNEE.value].visibility >= 0.7:
                         epaule = [squelette[mp_pose.PoseLandmark.RIGHT_SHOULDER.value].x, squelette[mp_pose.PoseLandmark.RIGHT_SHOULDER.value].y]
                         hanche = [squelette[mp_pose.PoseLandmark.RIGHT_HIP.value].x, squelette[mp_pose.PoseLandmark.RIGHT_HIP.value].y]
                         genou = [squelette[mp_pose.PoseLandmark.RIGHT_KNEE.value].x, squelette[mp_pose.PoseLandmark.RIGHT_KNEE.value].y]
                         cheville = [squelette[mp_pose.PoseLandmark.RIGHT_ANKLE.value].x, squelette[mp_pose.PoseLandmark.RIGHT_ANKLE.value].y]
-                        # bout_pied_x = squelette[mp_pose.PoseLandmark.RIGHT_FOOT_INDEX.value].x
 
-                        # # Si le genou passe devant les doigts de pieds
-                        # if genou[0] > bout_pied_x:
-                        #     message = {
-                        #         'type': 'erreur',
-                        #         'texte': 'Gardez vos jambes droites'
-                        #     }
                     else:
                         message = {
                             'type': 'erreur',
@@ -166,12 +153,10 @@ def lancer(séance):
                     
                     if squelette[mp_pose.PoseLandmark.LEFT_KNEE.value].visibility >= 0.7 and squelette[mp_pose.PoseLandmark.RIGHT_KNEE.value].visibility >= 0.7:
                         if mouvement == exercices.FENTE_GAUCHE:
-                            epaule_avant = [squelette[mp_pose.PoseLandmark.LEFT_SHOULDER.value].x, squelette[mp_pose.PoseLandmark.LEFT_SHOULDER.value].y]
                             hanche_avant = [squelette[mp_pose.PoseLandmark.LEFT_HIP.value].x, squelette[mp_pose.PoseLandmark.LEFT_HIP.value].y]
                             genou_avant = [squelette[mp_pose.PoseLandmark.LEFT_KNEE.value].x, squelette[mp_pose.PoseLandmark.LEFT_KNEE.value].y]
                             cheville_avant = [squelette[mp_pose.PoseLandmark.LEFT_ANKLE.value].x, squelette[mp_pose.PoseLandmark.LEFT_ANKLE.value].y]
                         else:
-                            epaule_avant = [squelette[mp_pose.PoseLandmark.RIGHT_SHOULDER.value].x, squelette[mp_pose.PoseLandmark.RIGHT_SHOULDER.value].y]
                             hanche_avant = [squelette[mp_pose.PoseLandmark.RIGHT_HIP.value].x, squelette[mp_pose.PoseLandmark.RIGHT_HIP.value].y]
                             genou_avant = [squelette[mp_pose.PoseLandmark.RIGHT_KNEE.value].x, squelette[mp_pose.PoseLandmark.RIGHT_KNEE.value].y]
                             cheville_avant = [squelette[mp_pose.PoseLandmark.RIGHT_ANKLE.value].x, squelette[mp_pose.PoseLandmark.RIGHT_ANKLE.value].y]
@@ -195,8 +180,6 @@ def lancer(séance):
                         }
                         pourcentage = 0
                         raise
-                    
-
 
                 # On arrondit le pourcentage
                 if pourcentage > 100:
@@ -204,10 +187,8 @@ def lancer(séance):
                 elif pourcentage < 0:
                     pourcentage = 0
                 pourcentage = round(pourcentage)
-            except Exception as inst:
-                # print(type(inst))    # the exception type
-                # print(inst.args)     # arguments stored in .args
-                # print(inst)          # __str__ allows args to be printed directly,
+            except:
+                print('caca')
                 pass
             
             # Rendu du squelette
@@ -243,9 +224,10 @@ def lancer(séance):
                     pourcentage = 0
                     mouvement = séance.exercices[index_exercice][0]
 
+            # On ferme la fenêtre lorsque la touche 'Q' est préssée
             key = cv2.waitKey(1)
             if key == ord('q') or key == ord('Q'):
                 break
-        
+
         cap.release()
         cv2.destroyWindow('Seance')

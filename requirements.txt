@@ -1,4 +1,3 @@
-tkscrolledframe
 Pillow
 opencv-python
 numpy
