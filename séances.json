@@ -1,0 +1,48 @@
+[
+    {
+        "titre": "S\u00e9ance jambe",
+        "exercices": [
+            [
+                "squat",
+                10
+            ],
+            [
+                "pause",
+                10
+            ],
+            [
+                "fente pied gauche avant",
+                10
+            ],
+            [
+                "fente pied droit avant",
+                10
+            ],
+            [
+                "pause",
+                10
+            ],
+            [
+                "squat",
+                10
+            ]
+        ]
+    },
+    {
+        "titre": "Petite s\u00e9ance du matin",
+        "exercices": [
+            [
+                "soul\u00e8vement d'halt\u00e8re bras droit",
+                5
+            ],
+            [
+                "soul\u00e8vement d'halt\u00e8re bras gauche",
+                5
+            ],
+            [
+                "squat",
+                5
+            ]
+        ]
+    }
+]

@@ -61,6 +61,9 @@ def calcul_angle(a, b, c) -> float:
 def dessiner_compteur(image, compteur, mouvement, stage):
     couleur = (245,117,16)
 
+    if stage == None:
+        return
+
     # On affiche un compteur spécial pour les secondes des pauses
     if mouvement != exercices.PAUSE:
         texte = strip_accents(f'Il vous reste {compteur} {mouvement}')

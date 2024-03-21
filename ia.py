@@ -79,6 +79,9 @@ def lancer(séance):
                 elif mouvement == exercices.SQUAT:
                     if stage == None:
                         stage = 'descendre'
+                        print('caca')
+                    
+                    print('SQUATTTT')
 
                     # Jambe gauche
                     if squelette[mp_pose.PoseLandmark.LEFT_KNEE.value].visibility >= 0.7:
@@ -188,7 +191,6 @@ def lancer(séance):
                     pourcentage = 0
                 pourcentage = round(pourcentage)
             except:
-                print('caca')
                 pass
             
             # Rendu du squelette

@@ -151,8 +151,8 @@ def créer_liste_séances(object, séances):
             titre = Label(cadre, text=séance.titre, font=('Arial', 30, 'bold'), pady=8)
             titre.pack()
 
-            for i in range(len(séance.exercices)):
-                exercice = séance.exercices[i]
+            for j in range(len(séance.exercices)):
+                exercice = séance.exercices[j]
                 contenu = Label(cadre,
                     text=f'• {exercice[0]} {exercice[1]}',
                     font=('Arial', 20),
@@ -175,8 +175,9 @@ def créer_liste_séances(object, séances):
             lancer_bouton = Label(cadre, text='Lancer cette séance', cursor='hand2', font=('Arial', 19), fg='#fff', bg='#006c80', padx=10, pady=10)
             lancer_bouton.bind('<Button-1>', séance.lancer_seance)
             lancer_bouton.pack(side='bottom')
-
+            
             i += 1
+
 class App:
     def __init__(self, root):
         self.root = root
